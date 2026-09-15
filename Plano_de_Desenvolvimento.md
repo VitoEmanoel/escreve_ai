@@ -30,11 +30,11 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Escrever um teste que injeta um áudio curto e real em português, validando se o serviço retorna o texto corretamente (teste isolado do endpoint).
 
 ## Etapa 5: Worker e Ciclo de Vida do Job
-- [ ] Criar o serviço de background/worker (`process_job.py`) para unir as etapas anteriores.
-- [ ] Implementar a máquina de estados do Job (`queued` -> `processing` (extração -> transcrição) -> `completed` ou `failed`).
-- [ ] Adicionar tratamento global de exceções no worker (atualizando o banco para `failed` com mensagem segura).
-- [ ] Criar endpoints de consulta (`GET /api/jobs/{id}`) e cancelamento (`DELETE /api/jobs/{id}`).
-- [ ] **Validação:** Enviar uma requisição de upload completa. Acompanhar pelo banco ou log o job transitando até `completed` com a transcrição salva no banco.
+- [x] Criar o serviço de background/worker (`process_job.py`) para unir as etapas anteriores.
+- [x] Implementar a máquina de estados do Job (`queued` -> `processing` (extração -> transcrição) -> `completed` ou `failed`).
+- [x] Adicionar tratamento global de exceções no worker (atualizando o banco para `failed` com mensagem segura).
+- [x] Criar endpoints de consulta (`GET /api/jobs/{id}`) e cancelamento (`DELETE /api/jobs/{id}`).
+- [x] **Validação:** Enviar uma requisição de upload completa. Acompanhar pelo banco ou log o job transitando até `completed` com a transcrição salva no banco.
 
 ## Etapa 6: Exportação de Resultados
 - [ ] Criar o serviço de exportação (`export_service.py`) para converter os segmentos/JSON para TXT, SRT e VTT.

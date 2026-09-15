@@ -1,17 +1,19 @@
 import json
 import shutil
 from pathlib import Path
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.models import TranscriptionJob
 from app.services import job_service
 from app.schemas.jobs import JobCreateResponse, JobResponse
+from app.workers.process_job import process_transcription_job
 
 router = APIRouter()
 
 @router.post("/jobs", response_model=JobCreateResponse, status_code=status.HTTP_202_ACCEPTED)
 def create_transcription_job(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     language: str = Form("auto"),
     model: str = Form("base"),
@@ -24,6 +26,10 @@ def create_transcription_job(
         language=language,
         model=model,
     )
+    
+    # Trigger the background processing
+    background_tasks.add_task(process_transcription_job, job.id)
+    
     return JobCreateResponse(
         id=job.id,
         status=job.status,
