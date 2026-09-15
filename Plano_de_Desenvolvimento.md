@@ -68,7 +68,7 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Derrubar os ambientes locais, rodar `docker compose up --build` e fazer um fluxo completo no sistema usando as portas expostas pelos containers.
 
 ## Etapa 11: Bateria de Testes Finais e Documentação
-- [ ] Implementar/Refatorar os testes unitários (Pytest) para serviços críticos.
-- [ ] Escrever um teste de integração de ponta a ponta.
-- [ ] Redigir o arquivo `README.md` detalhando instruções de instalação (local e docker), configuração de GPU opcional e limites.
-- [ ] **Validação Final:** Executar a suíte completa de testes (`pytest`), subir o projeto usando apenas as instruções do `README` e processar um áudio e um vídeo longos para validar a estabilidade do MVP.
+- [x] Implementar/Refatorar os testes unitários (Pytest) para serviços críticos.
+- [x] Escrever um teste de integração de ponta a ponta.
+- [x] Redigir o arquivo `README.md` detalhando instruções de instalação (local e docker), configuração de GPU opcional e limites.
+- [x] **Validação Final:** Executar a suíte completa de testes (`pytest`), subir o projeto usando apenas as instruções do `README` e processar um áudio e um vídeo longos para validar a estabilidade do MVP.
