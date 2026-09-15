@@ -150,7 +150,10 @@ function App() {
       <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
         
         <div className="bg-indigo-600 px-6 py-8 text-white text-center">
-          <h1 className="text-3xl font-bold">Escreve.AI</h1>
+          <div className="flex justify-center items-center space-x-3">
+            <img src="/logobranca.png" alt="Logo" className="h-10 w-auto" />
+            <h1 className="text-3xl font-bold">Escreve.AI</h1>
+          </div>
           <p className="mt-2 text-indigo-100">Transcreva seus áudios e vídeos localmente com IA</p>
         </div>
 
