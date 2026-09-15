@@ -11,11 +11,11 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Rodar o servidor localmente, acessar `/api/health` e garantir que o banco `transcriber.db` é criado.
 
 ## Etapa 2: Gerenciamento de Arquivos e Upload
-- [ ] Implementar a lógica de salvamento seguro de arquivos (UUIDs, diretórios temporários).
-- [ ] Criar o endpoint de recepção de arquivos (`POST /api/jobs`).
-- [ ] Adicionar validações estritas (extensão, MIME type, tamanho limite).
-- [ ] Criar e persistir o registro do Job no banco de dados com status `queued`.
-- [ ] **Validação:** Enviar um arquivo via cURL/Postman, verificar se ele é salvo corretamente no disco com UUID e se o registro aparece no SQLite. Testar rejeição de arquivos inválidos.
+- [x] Implementar a lógica de salvamento seguro de arquivos (UUIDs, diretórios temporários).
+- [x] Criar o endpoint de recepção de arquivos (`POST /api/jobs`).
+- [x] Adicionar validações estritas (extensão, MIME type, tamanho limite).
+- [x] Criar e persistir o registro do Job no banco de dados com status `queued`.
+- [x] **Validação:** Enviar um arquivo via cURL/Postman, verificar se ele é salvo corretamente no disco com UUID e se o registro aparece no SQLite. Testar rejeição de arquivos inválidos.
 
 ## Etapa 3: Processamento de Mídia (FFmpeg/FFprobe)
 - [ ] Criar serviço (`media_service.py`) para interagir com o `ffprobe` (obter duração e validar se possui áudio).
