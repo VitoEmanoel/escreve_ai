@@ -24,10 +24,10 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Escrever um script simples ou teste automatizado para enviar um `.mp4` e verificar se o `.wav` resultante foi criado com as especificações corretas.
 
 ## Etapa 4: Transcrição Base (faster-whisper)
-- [ ] Configurar o `TranscriptionService` integrado à biblioteca `faster-whisper`.
-- [ ] Implementar a lógica de carregamento dinâmico de modelos (`tiny`, `base`, `small`, etc.) e suporte à detecção de CPU/GPU.
-- [ ] Formatar o retorno da transcrição (texto completo e segmentos).
-- [ ] **Validação:** Escrever um teste que injeta um áudio curto e real em português, validando se o serviço retorna o texto corretamente (teste isolado do endpoint).
+- [x] Configurar o `TranscriptionService` integrado à biblioteca `faster-whisper`.
+- [x] Implementar a lógica de carregamento dinâmico de modelos (`tiny`, `base`, `small`, etc.) e suporte à detecção de CPU/GPU.
+- [x] Formatar o retorno da transcrição (texto completo e segmentos).
+- [x] **Validação:** Escrever um teste que injeta um áudio curto e real em português, validando se o serviço retorna o texto corretamente (teste isolado do endpoint).
 
 ## Etapa 5: Worker e Ciclo de Vida do Job
 - [ ] Criar o serviço de background/worker (`process_job.py`) para unir as etapas anteriores.
