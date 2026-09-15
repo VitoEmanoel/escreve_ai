@@ -49,10 +49,10 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Executar o frontend, testar a interface de seleção e validar se as opções refletem o `GET /api/config`.
 
 ## Etapa 8: Integração Front/Back e Progresso
-- [ ] Conectar o envio do formulário (Upload) ao endpoint `/api/jobs`.
-- [ ] Implementar sistema de *polling* (ex: a cada 2 segundos) para consultar o status do Job após o upload.
-- [ ] Desenvolver o componente visual de progresso (barra de carregamento e status).
-- [ ] **Validação:** Fazer um upload pela UI e ver a barra de progresso avançar até a conclusão. Testar também o fluxo de erro (ex: simular erro no backend).
+- [x] Conectar o envio do formulário (Upload) ao endpoint `/api/jobs`.
+- [x] Implementar sistema de *polling* (ex: a cada 2 segundos) para consultar o status do Job após o upload.
+- [x] Desenvolver o componente visual de progresso (barra de carregamento e status).
+- [x] **Validação:** Fazer um upload pela UI e ver a barra de progresso avançar até a conclusão. Testar também o fluxo de erro (ex: simular erro no backend).
 
 ## Etapa 9: Interface de Resultados e Limpeza
 - [ ] Construir o componente de exibição do texto transcrito (com pesquisa interna de palavras).
