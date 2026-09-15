@@ -18,10 +18,10 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Enviar um arquivo via cURL/Postman, verificar se ele é salvo corretamente no disco com UUID e se o registro aparece no SQLite. Testar rejeição de arquivos inválidos.
 
 ## Etapa 3: Processamento de Mídia (FFmpeg/FFprobe)
-- [ ] Criar serviço (`media_service.py`) para interagir com o `ffprobe` (obter duração e validar se possui áudio).
-- [ ] Adicionar validação de duração máxima baseada na configuração.
-- [ ] Implementar extração/conversão de áudio via `ffmpeg` (para .wav, mono, 16kHz) de forma segura (sem `shell=True`).
-- [ ] **Validação:** Escrever um script simples ou teste automatizado para enviar um `.mp4` e verificar se o `.wav` resultante foi criado com as especificações corretas.
+- [x] Criar serviço (`media_service.py`) para interagir com o `ffprobe` (obter duração e validar se possui áudio).
+- [x] Adicionar validação de duração máxima baseada na configuração.
+- [x] Implementar extração/conversão de áudio via `ffmpeg` (para .wav, mono, 16kHz) de forma segura (sem `shell=True`).
+- [x] **Validação:** Escrever um script simples ou teste automatizado para enviar um `.mp4` e verificar se o `.wav` resultante foi criado com as especificações corretas.
 
 ## Etapa 4: Transcrição Base (faster-whisper)
 - [ ] Configurar o `TranscriptionService` integrado à biblioteca `faster-whisper`.

@@ -86,6 +86,32 @@ def create_job(
             detail="Arquivo enviado está vazio."
         )
 
+    # Validate media with ffprobe
+    from app.services.media_service import get_media_info, MediaProcessingError
+    
+    try:
+        duration, has_audio = get_media_info(str(target_path))
+    except MediaProcessingError as e:
+        shutil.rmtree(upload_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+        
+    if not has_audio:
+        shutil.rmtree(upload_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="O arquivo não possui faixa de áudio."
+        )
+        
+    if duration > (settings.max_duration_minutes * 60):
+        shutil.rmtree(upload_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Duração de {duration:.1f}s excede o limite de {settings.max_duration_minutes} minutos."
+        )
+
     job = TranscriptionJob(
         id=job_id,
         original_filename=Path(file.filename).name,
@@ -93,6 +119,7 @@ def create_job(
         media_type=media_type,
         mime_type=file.content_type or "application/octet-stream",
         file_size_bytes=total_bytes,
+        duration_seconds=duration,
         language=language or "auto",
         model_name=model_name,
         status="queued",
