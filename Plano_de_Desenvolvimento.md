@@ -42,11 +42,11 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Processar um arquivo, realizar o download nos 4 formatos suportados e abrir os arquivos localmente para garantir a formatação (ex: timestamps do SRT).
 
 ## Etapa 7: Estruturação do Frontend (React + Vite)
-- [ ] Inicializar o projeto Vite (React + TS) e configurar o TailwindCSS.
-- [ ] Criar o esqueleto da interface principal responsiva.
-- [ ] Implementar a área de arrastar/soltar e seleção de arquivos.
-- [ ] Implementar seletores de idioma e modelo.
-- [ ] **Validação:** Executar o frontend, testar a interface de seleção e validar se as opções refletem o `GET /api/config`.
+- [x] Inicializar o projeto Vite (React + TS) e configurar o TailwindCSS.
+- [x] Criar o esqueleto da interface principal responsiva.
+- [x] Implementar a área de arrastar/soltar e seleção de arquivos.
+- [x] Implementar seletores de idioma e modelo.
+- [x] **Validação:** Executar o frontend, testar a interface de seleção e validar se as opções refletem o `GET /api/config`.
 
 ## Etapa 8: Integração Front/Back e Progresso
 - [ ] Conectar o envio do formulário (Upload) ao endpoint `/api/jobs`.
