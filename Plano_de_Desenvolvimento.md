@@ -37,9 +37,9 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Enviar uma requisição de upload completa. Acompanhar pelo banco ou log o job transitando até `completed` com a transcrição salva no banco.
 
 ## Etapa 6: Exportação de Resultados
-- [ ] Criar o serviço de exportação (`export_service.py`) para converter os segmentos/JSON para TXT, SRT e VTT.
-- [ ] Criar o endpoint de download (`GET /api/jobs/{id}/download?format=...`).
-- [ ] **Validação:** Processar um arquivo, realizar o download nos 4 formatos suportados e abrir os arquivos localmente para garantir a formatação (ex: timestamps do SRT).
+- [x] Criar o serviço de exportação (`export_service.py`) para converter os segmentos/JSON para TXT, SRT e VTT.
+- [x] Criar o endpoint de download (`GET /api/jobs/{id}/download?format=...`).
+- [x] **Validação:** Processar um arquivo, realizar o download nos 4 formatos suportados e abrir os arquivos localmente para garantir a formatação (ex: timestamps do SRT).
 
 ## Etapa 7: Estruturação do Frontend (React + Vite)
 - [ ] Inicializar o projeto Vite (React + TS) e configurar o TailwindCSS.

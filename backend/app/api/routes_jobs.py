@@ -1,11 +1,12 @@
 import json
 import shutil
 from pathlib import Path
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, BackgroundTasks, Query
+from fastapi.responses import Response, JSONResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.db.models import TranscriptionJob
-from app.services import job_service
+from app.services import job_service, export_service
 from app.schemas.jobs import JobCreateResponse, JobResponse
 from app.workers.process_job import process_transcription_job
 
@@ -87,3 +88,50 @@ def delete_transcription_job(job_id: str, db: Session = Depends(get_db)):
     db.delete(job)
     db.commit()
     return {"message": "Job e arquivos associados removidos com sucesso."}
+
+@router.get("/jobs/{job_id}/download")
+def download_transcription(
+    job_id: str,
+    format: str = Query(..., description="Formato desejado: txt, srt, vtt, json"),
+    db: Session = Depends(get_db)
+):
+    job = db.query(TranscriptionJob).filter(TranscriptionJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job não encontrado.")
+
+    if job.status != "completed":
+        raise HTTPException(status_code=400, detail="A transcrição ainda não está concluída.")
+
+    if not job.full_text:
+        raise HTTPException(status_code=500, detail="Texto da transcrição não encontrado.")
+
+    format = format.lower()
+    safe_filename = f"{Path(job.original_filename).stem}.{format}"
+    
+    segments = []
+    if job.segments_json:
+        try:
+            segments = json.loads(job.segments_json)
+        except Exception:
+            pass
+
+    if format == "txt":
+        content = export_service.generate_txt(job.full_text)
+        media_type = "text/plain; charset=utf-8"
+    elif format == "srt":
+        content = export_service.generate_srt(segments)
+        media_type = "text/plain; charset=utf-8"
+    elif format == "vtt":
+        content = export_service.generate_vtt(segments)
+        media_type = "text/vtt; charset=utf-8"
+    elif format == "json":
+        content = export_service.generate_json(segments, job.full_text, job.language)
+        media_type = "application/json; charset=utf-8"
+    else:
+        raise HTTPException(status_code=400, detail="Formato inválido. Use txt, srt, vtt ou json.")
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'}
+    )
