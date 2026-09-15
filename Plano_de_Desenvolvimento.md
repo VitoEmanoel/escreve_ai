@@ -61,11 +61,11 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Concluir uma transcrição, pesquisar no texto pela UI, baixar os arquivos e depois clicar em "Excluir". Verificar se o job e os arquivos sumiram do disco e do banco.
 
 ## Etapa 10: Dockerização e Polimentos
-- [ ] Escrever o `Dockerfile` do backend (instalando dependências do sistema como `ffmpeg`).
-- [ ] Escrever o `Dockerfile` do frontend (build estático com Nginx).
-- [ ] Criar o `docker-compose.yml` para orquestração geral.
-- [ ] Ocultar *stack traces* completos da interface, garantindo mensagens *user-friendly*.
-- [ ] **Validação:** Derrubar os ambientes locais, rodar `docker compose up --build` e fazer um fluxo completo no sistema usando as portas expostas pelos containers.
+- [x] Escrever o `Dockerfile` do backend (instalando dependências do sistema como `ffmpeg`).
+- [x] Escrever o `Dockerfile` do frontend (build estático com Nginx).
+- [x] Criar o `docker-compose.yml` para orquestração geral.
+- [x] Ocultar *stack traces* completos da interface, garantindo mensagens *user-friendly*.
+- [x] **Validação:** Derrubar os ambientes locais, rodar `docker compose up --build` e fazer um fluxo completo no sistema usando as portas expostas pelos containers.
 
 ## Etapa 11: Bateria de Testes Finais e Documentação
 - [ ] Implementar/Refatorar os testes unitários (Pytest) para serviços críticos.

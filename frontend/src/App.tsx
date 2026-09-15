@@ -27,7 +27,7 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/config')
+    fetch('/api/config')
       .then(res => res.json())
       .then(data => setConfig(data))
       .catch(err => console.error("Error fetching config:", err));
@@ -40,7 +40,7 @@ function App() {
     if (activeJob && (activeJob.status === 'queued' || activeJob.status === 'processing')) {
       intervalId = setInterval(async () => {
         try {
-          const res = await fetch(`http://localhost:8000/api/jobs/${activeJob.id}`);
+          const res = await fetch(`/api/jobs/${activeJob.id}`);
           if (res.ok) {
             const data: JobData = await res.json();
             setActiveJob(data);
@@ -61,7 +61,7 @@ function App() {
     if (!confirm("Tem certeza que deseja excluir os dados desta transcrição?")) return;
     
     try {
-      await fetch(`http://localhost:8000/api/jobs/${activeJob.id}`, { method: 'DELETE' });
+      await fetch(`/api/jobs/${activeJob.id}`, { method: 'DELETE' });
       setActiveJob(null);
       setSelectedFile(null);
       setSearchTerm('');
@@ -113,7 +113,7 @@ function App() {
     formData.append('task', 'transcribe');
 
     try {
-      const res = await fetch('http://localhost:8000/api/jobs', {
+      const res = await fetch('/api/jobs', {
         method: 'POST',
         body: formData,
       });
@@ -213,10 +213,10 @@ function App() {
                   <div>
                     <h4 className="font-medium text-gray-700 mb-2">Baixar Arquivos</h4>
                     <div className="flex flex-wrap gap-2">
-                      <a href={`http://localhost:8000/api/jobs/${activeJob.id}/download?format=txt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">TXT</a>
-                      <a href={`http://localhost:8000/api/jobs/${activeJob.id}/download?format=srt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">SRT (Legenda)</a>
-                      <a href={`http://localhost:8000/api/jobs/${activeJob.id}/download?format=vtt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">VTT (Legenda Web)</a>
-                      <a href={`http://localhost:8000/api/jobs/${activeJob.id}/download?format=json`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">JSON Bruto</a>
+                      <a href={`/api/jobs/${activeJob.id}/download?format=txt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">TXT</a>
+                      <a href={`/api/jobs/${activeJob.id}/download?format=srt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">SRT (Legenda)</a>
+                      <a href={`/api/jobs/${activeJob.id}/download?format=vtt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">VTT (Legenda Web)</a>
+                      <a href={`/api/jobs/${activeJob.id}/download?format=json`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">JSON Bruto</a>
                     </div>
                   </div>
 
