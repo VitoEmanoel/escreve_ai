@@ -55,10 +55,10 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [x] **Validação:** Fazer um upload pela UI e ver a barra de progresso avançar até a conclusão. Testar também o fluxo de erro (ex: simular erro no backend).
 
 ## Etapa 9: Interface de Resultados e Limpeza
-- [ ] Construir o componente de exibição do texto transcrito (com pesquisa interna de palavras).
-- [ ] Adicionar os botões de download e exclusão visual, integrados à API.
-- [ ] Implementar no backend o *cron* interno ou lógica para expiração e limpeza de jobs e arquivos antigos.
-- [ ] **Validação:** Concluir uma transcrição, pesquisar no texto pela UI, baixar os arquivos e depois clicar em "Excluir". Verificar se o job e os arquivos sumiram do disco e do banco.
+- [x] Construir o componente de exibição do texto transcrito (com pesquisa interna de palavras).
+- [x] Adicionar os botões de download e exclusão visual, integrados à API.
+- [x] Implementar no backend o *cron* interno ou lógica para expiração e limpeza de jobs e arquivos antigos.
+- [x] **Validação:** Concluir uma transcrição, pesquisar no texto pela UI, baixar os arquivos e depois clicar em "Excluir". Verificar se o job e os arquivos sumiram do disco e do banco.
 
 ## Etapa 10: Dockerização e Polimentos
 - [ ] Escrever o `Dockerfile` do backend (instalando dependências do sistema como `ffmpeg`).
