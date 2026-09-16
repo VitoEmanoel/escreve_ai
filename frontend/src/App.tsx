@@ -19,6 +19,9 @@ function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [model, setModel] = useState('base');
   const [language, setLanguage] = useState('auto');
+  const [taskMethod, setTaskMethod] = useState('transcribe');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [inputMode, setInputMode] = useState<'file' | 'youtube'>('file');
   
   const [activeJob, setActiveJob] = useState<JobData | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -103,14 +106,20 @@ function App() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile) return;
+    if (inputMode === 'file' && !selectedFile) return;
+    if (inputMode === 'youtube' && !youtubeUrl) return;
 
     setIsUploading(true);
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    if (inputMode === 'file' && selectedFile) {
+      formData.append('file', selectedFile);
+    } else if (inputMode === 'youtube' && youtubeUrl) {
+      formData.append('youtube_url', youtubeUrl);
+    }
+    
     formData.append('language', language);
     formData.append('model', model);
-    formData.append('task', 'transcribe');
+    formData.append('task', taskMethod);
 
     try {
       const res = await fetch('/api/jobs', {
@@ -253,36 +262,69 @@ function App() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               
-              <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:bg-gray-50 transition cursor-pointer"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="mt-4 text-sm text-gray-600">
-                  <span className="font-medium text-indigo-600 hover:text-indigo-500">Clique para selecionar</span> ou arraste um arquivo aqui
-                </p>
-                <p className="mt-1 text-xs text-gray-500">
-                  MP3, MP4, WAV, OGG, M4A, AAC
-                </p>
-                {selectedFile && (
-                  <div className="mt-4 p-3 bg-indigo-50 rounded-md text-indigo-800 font-medium break-all">
-                    📄 {selectedFile.name}
-                  </div>
-                )}
-                <input 
-                  type="file" 
-                  ref={fileInputRef}
-                  className="hidden" 
-                  accept="audio/*,video/*"
-                  onChange={handleFileChange}
-                />
+              <div className="flex justify-center space-x-4 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setInputMode('file')}
+                  className={`px-4 py-2 text-sm font-medium rounded-md ${inputMode === 'file' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                >
+                  Arquivo Local
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInputMode('youtube')}
+                  className={`px-4 py-2 text-sm font-medium rounded-md ${inputMode === 'youtube' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                >
+                  Link do YouTube
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {inputMode === 'file' ? (
+                <div 
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:bg-gray-50 transition cursor-pointer"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="mt-4 text-sm text-gray-600">
+                    <span className="font-medium text-indigo-600 hover:text-indigo-500">Clique para selecionar</span> ou arraste um arquivo aqui
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    MP3, MP4, WAV, OGG, M4A, AAC
+                  </p>
+                  {selectedFile && (
+                    <div className="mt-4 p-3 bg-indigo-50 rounded-md text-indigo-800 font-medium break-all">
+                      📄 {selectedFile.name}
+                    </div>
+                  )}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    className="hidden" 
+                    accept="audio/*,video/*"
+                    onChange={handleFileChange}
+                  />
+                </div>
+              ) : (
+                <div className="p-8 border-2 border-gray-200 rounded-lg bg-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cole o link do YouTube</label>
+                  <input
+                    type="url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full pl-3 pr-3 py-3 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 rounded-md border"
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    O áudio será baixado automaticamente para transcrição.
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Idioma do Áudio</label>
                   <select 
@@ -313,6 +355,18 @@ function App() {
                     )}
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Ação</label>
+                  <select 
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border"
+                    value={taskMethod}
+                    onChange={(e) => setTaskMethod(e.target.value)}
+                  >
+                    <option value="transcribe">Transcrever</option>
+                    <option value="translate">Traduzir para Inglês</option>
+                  </select>
+                </div>
               </div>
 
               {config && (
@@ -323,10 +377,10 @@ function App() {
 
               <button 
                 type="submit"
-                disabled={!selectedFile || isUploading}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${(!selectedFile || isUploading) ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'}`}
+                disabled={(inputMode === 'file' && !selectedFile) || (inputMode === 'youtube' && !youtubeUrl) || isUploading}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${((inputMode === 'file' && !selectedFile) || (inputMode === 'youtube' && !youtubeUrl) || isUploading) ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'}`}
               >
-                {isUploading ? 'Enviando arquivo...' : 'Começar Transcrição'}
+                {isUploading ? 'Enviando...' : (taskMethod === 'translate' ? 'Começar Tradução' : 'Começar Transcrição')}
               </button>
             </form>
           )}

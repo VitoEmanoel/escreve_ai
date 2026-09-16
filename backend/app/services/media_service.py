@@ -84,3 +84,27 @@ def extract_audio(input_path: str, output_path: str) -> None:
     except FileNotFoundError:
         logger.error("ffmpeg not found on the system")
         raise MediaProcessingError("A ferramenta 'ffmpeg' não está instalada no sistema.")
+
+def download_youtube_audio(url: str, output_path: str) -> None:
+    """
+    Downloads audio from YouTube using yt-dlp.
+    """
+    cmd = [
+        "yt-dlp",
+        "--extract-audio",
+        "--audio-format", "mp3",
+        "--audio-quality", "5",
+        "-o", output_path,
+        url
+    ]
+    try:
+        subprocess.run(cmd, capture_output=True, text=True, timeout=1200, check=True)
+    except subprocess.TimeoutExpired:
+        logger.error(f"yt-dlp timeout for {url}")
+        raise MediaProcessingError("Tempo limite excedido ao baixar o áudio do YouTube.")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"yt-dlp failed for {url}. Stderr: {e.stderr}")
+        raise MediaProcessingError("Falha ao baixar o áudio do YouTube. Verifique se o link é válido.")
+    except FileNotFoundError:
+        logger.error("yt-dlp not found on the system")
+        raise MediaProcessingError("A ferramenta 'yt-dlp' não está instalada no sistema.")

@@ -33,6 +33,14 @@ def process_transcription_job(job_id: str):
         job_dir = Path(original_path).parent
         wav_path = str(job_dir / "audio.wav")
         
+        if job.media_type == "youtube":
+            from app.services.media_service import download_youtube_audio
+            logger.info(f"Downloading YouTube audio for job {job_id}...")
+            job.progress = 15
+            db.commit()
+            # Note: original_filename contains the youtube URL in this case
+            download_youtube_audio(job.original_filename, original_path)
+
         logger.info(f"Extracting/Normalizing audio for job {job_id}...")
         job.progress = 20
         db.commit()
@@ -47,7 +55,8 @@ def process_transcription_job(job_id: str):
         result = transcription_service.transcribe(
             audio_path=wav_path,
             language=job.language,
-            model_name=job.model_name
+            model_name=job.model_name,
+            task=job.task
         )
         
         # Step 3: Save results

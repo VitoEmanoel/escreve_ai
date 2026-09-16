@@ -15,7 +15,8 @@ router = APIRouter()
 @router.post("/jobs", response_model=JobCreateResponse, status_code=status.HTTP_202_ACCEPTED)
 def create_transcription_job(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
+    file: UploadFile | None = File(None),
+    youtube_url: str | None = Form(None),
     language: str = Form("auto"),
     model: str = Form("base"),
     task: str = Form("transcribe"),
@@ -24,8 +25,10 @@ def create_transcription_job(
     job = job_service.create_job(
         db=db,
         file=file,
+        youtube_url=youtube_url,
         language=language,
         model=model,
+        task=task,
     )
     
     # Trigger the background processing
@@ -62,6 +65,7 @@ def get_transcription_job(job_id: str, db: Session = Depends(get_db)):
         duration_seconds=job.duration_seconds,
         language=job.language,
         model_name=job.model_name,
+        task=job.task,
         status=job.status,
         progress=job.progress,
         error_code=job.error_code,

@@ -16,6 +16,7 @@ class JobResponse(BaseModel):
     duration_seconds: Optional[float] = None
     language: Optional[str] = None
     model_name: str
+    task: str
     status: str
     progress: int
     error_code: Optional[str] = None

@@ -35,6 +35,7 @@ class TranscriptionService:
         audio_path: str,
         language: str | None,
         model_name: str,
+        task: str = "transcribe"
     ) -> TranscriptionResult:
         model = self._get_model(model_name)
         
@@ -45,6 +46,7 @@ class TranscriptionService:
         segments_generator, info = model.transcribe(
             audio_path,
             language=whisper_lang,
+            task=task,
             beam_size=5
         )
         

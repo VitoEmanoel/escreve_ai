@@ -15,6 +15,7 @@ class TranscriptionJob(Base):
     duration_seconds = Column(Float, nullable=True)
     language = Column(String, nullable=True)
     model_name = Column(String, nullable=False)
+    task = Column(String, nullable=False, default="transcribe")
     status = Column(String, nullable=False, default="queued") # queued, processing, completed, failed, cancelled
     progress = Column(Integer, default=0)
     error_code = Column(String, nullable=True)

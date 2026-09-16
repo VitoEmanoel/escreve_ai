@@ -16,17 +16,80 @@ CHUNK_SIZE = 1024 * 1024  # 1MB chunk
 def get_file_extension(filename: str) -> str:
     return Path(filename).suffix.lower()
 
-def create_job(
-    db: Session,
-    file: UploadFile,
-    language: str | None = "auto",
-    model: str | None = None,
-) -> TranscriptionJob:
-    if not file.filename:
+import subprocess
+import json
+
+def get_youtube_info(url: str) -> dict:
+    cmd = ["yt-dlp", "-j", url]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return json.loads(result.stdout)
+    except subprocess.CalledProcessError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Arquivo inválido ou sem nome."
+            detail="Não foi possível obter informações do vídeo do YouTube. Verifique o link."
         )
+
+def create_job(
+    db: Session,
+    file: UploadFile | None = None,
+    youtube_url: str | None = None,
+    language: str | None = "auto",
+    model: str | None = None,
+    task: str | None = "transcribe",
+) -> TranscriptionJob:
+    if not file and not youtube_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nenhum arquivo ou link do YouTube fornecido."
+        )
+
+    model_name = model or settings.default_model
+    if model_name not in ALLOWED_MODELS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Modelo '{model_name}' inválido."
+        )
+
+    job_id = str(uuid.uuid4())
+    upload_dir = Path(settings.data_dir) / "uploads" / job_id
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    if youtube_url:
+        info = get_youtube_info(youtube_url)
+        duration = info.get("duration", 0)
+        
+        if duration > settings.max_duration_minutes * 60:
+            shutil.rmtree(upload_dir)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Vídeo muito longo. Máximo permitido: {settings.max_duration_minutes} minutos."
+            )
+            
+        stored_filename = "youtube.mp3"  # Will be downloaded as mp3 in worker
+        
+        job = TranscriptionJob(
+            id=job_id,
+            original_filename=youtube_url,
+            stored_filename=f"data/uploads/{job_id}/{stored_filename}",
+            media_type="youtube",
+            mime_type="audio/mp3",
+            file_size_bytes=0,
+            duration_seconds=duration,
+            language=language or "auto",
+            model_name=model_name,
+            task=task or "transcribe",
+            status="queued",
+            progress=0
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        return job
+
+    # Handle file upload
+    if not file.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Arquivo sem nome.")
 
     ext = get_file_extension(file.filename)
     if ext in AUDIO_EXTENSIONS:
@@ -36,19 +99,8 @@ def create_job(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Extensão '{ext}' não suportada. Extensões permitidas: {', '.join(sorted(AUDIO_EXTENSIONS | VIDEO_EXTENSIONS))}"
+            detail=f"Extensão '{ext}' não suportada."
         )
-
-    model_name = model or settings.default_model
-    if model_name not in ALLOWED_MODELS:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Modelo '{model_name}' inválido. Modelos permitidos: {', '.join(sorted(ALLOWED_MODELS))}"
-        )
-
-    job_id = str(uuid.uuid4())
-    upload_dir = Path(settings.data_dir) / "uploads" / job_id
-    upload_dir.mkdir(parents=True, exist_ok=True)
 
     stored_filename = f"input{ext}"
     target_path = upload_dir / stored_filename
@@ -62,71 +114,57 @@ def create_job(
                 total_bytes += len(chunk)
                 if total_bytes > max_bytes:
                     raise HTTPException(
-                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                        detail=f"Arquivo excede o limite máximo permitido de {settings.max_file_size_mb} MB."
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Arquivo muito grande. Máximo permitido: {settings.max_file_size_mb} MB"
                     )
                 buffer.write(chunk)
-    except HTTPException:
-        # Clean up created file if too large
-        if target_path.exists():
-            shutil.rmtree(upload_dir, ignore_errors=True)
-        raise
     except Exception as e:
-        if target_path.exists():
-            shutil.rmtree(upload_dir, ignore_errors=True)
+        shutil.rmtree(upload_dir, ignore_errors=True)
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro ao salvar o arquivo enviado."
+            detail="Erro ao salvar arquivo"
         )
 
-    if total_bytes == 0:
-        shutil.rmtree(upload_dir, ignore_errors=True)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Arquivo enviado está vazio."
-        )
-
-    # Validate media with ffprobe
-    from app.services.media_service import get_media_info, MediaProcessingError
-    
+    import subprocess
+    cmd = [
+        "ffprobe", "-v", "error", "-show_entries",
+        "format=duration", "-of",
+        "default=noprint_wrappers=1:nokey=1", str(target_path)
+    ]
+    duration = 0.0
     try:
-        duration, has_audio = get_media_info(str(target_path))
-    except MediaProcessingError as e:
-        shutil.rmtree(upload_dir, ignore_errors=True)
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e)
-        )
-        
-    if not has_audio:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        duration = float(result.stdout.strip())
+        if duration > settings.max_duration_minutes * 60:
+            raise ValueError()
+    except ValueError:
         shutil.rmtree(upload_dir, ignore_errors=True)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="O arquivo não possui faixa de áudio."
+            detail=f"Arquivo muito longo. Máximo permitido: {settings.max_duration_minutes} minutos"
         )
-        
-    if duration > (settings.max_duration_minutes * 60):
-        shutil.rmtree(upload_dir, ignore_errors=True)
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"Duração de {duration:.1f}s excede o limite de {settings.max_duration_minutes} minutos."
-        )
+    except subprocess.CalledProcessError:
+        pass
 
     job = TranscriptionJob(
         id=job_id,
-        original_filename=Path(file.filename).name,
-        stored_filename=str(target_path),
+        original_filename=file.filename,
+        stored_filename=f"data/uploads/{job_id}/{stored_filename}",
         media_type=media_type,
         mime_type=file.content_type or "application/octet-stream",
         file_size_bytes=total_bytes,
         duration_seconds=duration,
         language=language or "auto",
         model_name=model_name,
+        task=task or "transcribe",
         status="queued",
         progress=0
     )
-
+    
     db.add(job)
     db.commit()
     db.refresh(job)
+    
     return job
