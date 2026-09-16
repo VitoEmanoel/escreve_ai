@@ -1,9 +1,10 @@
 import json
 import shutil
 from pathlib import Path
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, BackgroundTasks, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response, JSONResponse
 from sqlalchemy.orm import Session
+import asyncio
 from app.db.session import get_db
 from app.db.models import TranscriptionJob
 from app.services import job_service, export_service
@@ -11,6 +12,56 @@ from app.schemas.jobs import JobCreateResponse, JobResponse
 from app.workers.process_job import process_transcription_job
 
 router = APIRouter()
+
+@router.websocket("/ws/jobs/{job_id}")
+async def websocket_job_status(websocket: WebSocket, job_id: str, db: Session = Depends(get_db)):
+    await websocket.accept()
+    try:
+        while True:
+            # Em cada loop, atualizamos a instância a partir do banco
+            db.expire_all()
+            job = db.query(TranscriptionJob).filter(TranscriptionJob.id == job_id).first()
+            if not job:
+                await websocket.send_json({"error": "Job não encontrado."})
+                break
+                
+            segments = None
+            if job.segments_json:
+                try:
+                    segments = json.loads(job.segments_json)
+                except Exception:
+                    pass
+
+            job_resp = JobResponse(
+                id=job.id,
+                original_filename=job.original_filename,
+                media_type=job.media_type,
+                mime_type=job.mime_type,
+                file_size_bytes=job.file_size_bytes,
+                duration_seconds=job.duration_seconds,
+                language=job.language,
+                model_name=job.model_name,
+                task=job.task,
+                status=job.status,
+                progress=job.progress,
+                error_code=job.error_code,
+                error_message=job.error_message,
+                full_text=job.full_text,
+                segments=segments,
+                created_at=job.created_at,
+                started_at=job.started_at,
+                completed_at=job.completed_at,
+                expires_at=job.expires_at
+            )
+            
+            await websocket.send_json(job_resp.model_dump(mode='json'))
+            
+            if job.status in ["completed", "failed", "cancelled"]:
+                break
+                
+            await asyncio.sleep(1.0)
+    except WebSocketDisconnect:
+        pass
 
 @router.post("/jobs", response_model=JobCreateResponse, status_code=status.HTTP_202_ACCEPTED)
 def create_transcription_job(

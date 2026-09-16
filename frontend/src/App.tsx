@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { JobItem, type JobData } from './components/JobItem';
 
 interface AppConfig {
   models: string[];
@@ -6,26 +7,17 @@ interface AppConfig {
   max_duration_minutes: number;
 }
 
-interface JobData {
-  id: string;
-  status: string;
-  progress: number;
-  error_message?: string;
-  full_text?: string;
-}
-
 function App() {
   const [config, setConfig] = useState<AppConfig | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [model, setModel] = useState('base');
   const [language, setLanguage] = useState('auto');
   const [taskMethod, setTaskMethod] = useState('transcribe');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [inputMode, setInputMode] = useState<'file' | 'youtube'>('file');
   
-  const [activeJob, setActiveJob] = useState<JobData | null>(null);
+  const [activeJobs, setActiveJobs] = useState<JobData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,355 +28,269 @@ function App() {
       .catch(err => console.error("Error fetching config:", err));
   }, []);
 
-  // Polling hook
-  useEffect(() => {
-    let intervalId: ReturnType<typeof setInterval>;
-
-    if (activeJob && (activeJob.status === 'queued' || activeJob.status === 'processing')) {
-      intervalId = setInterval(async () => {
-        try {
-          const res = await fetch(`/api/jobs/${activeJob.id}`);
-          if (res.ok) {
-            const data: JobData = await res.json();
-            setActiveJob(data);
-          }
-        } catch (error) {
-          console.error("Error polling job status:", error);
-        }
-      }, 2000);
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [activeJob]);
-
-  const handleDelete = async () => {
-    if (!activeJob) return;
-    if (!confirm("Tem certeza que deseja excluir os dados desta transcrição?")) return;
+  const processFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
     
-    try {
-      await fetch(`/api/jobs/${activeJob.id}`, { method: 'DELETE' });
-      setActiveJob(null);
-      setSelectedFile(null);
-      setSearchTerm('');
-      alert("Job e arquivos excluídos com sucesso!");
-    } catch (error) {
-      console.error("Delete error:", error);
-      alert("Erro ao excluir o job.");
-    }
-  };
+    const validFiles = Array.from(files).filter(file => {
+      // Verifica se é áudio ou vídeo
+      if (!file.type.startsWith('audio/') && !file.type.startsWith('video/') && !file.name.match(/\.(mkv|mp4|webm|wav|mp3|m4a|ogg|flac)$/i)) {
+        console.warn(`Arquivo ignorado (não suportado): ${file.name}`);
+        return false;
+      }
+      return true;
+    });
 
-  const highlightText = (text: string, highlight: string) => {
-    if (!highlight.trim()) return text;
-    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
-    return (
-      <span>
-        {parts.map((part, i) => 
-          part.toLowerCase() === highlight.toLowerCase() ? (
-            <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm">{part}</mark>
-          ) : (
-            part
-          )
-        )}
-      </span>
-    );
+    if (validFiles.length === 0) return;
+
+    setSelectedFiles(prev => {
+      const newFiles: File[] = [];
+      for (const file of validFiles) {
+        // Verifica se já não existe um arquivo com mesmo nome e tamanho
+        const isDuplicate = prev.some(existing => existing.name === file.name && existing.size === file.size);
+        if (!isDuplicate) {
+          newFiles.push(file);
+        }
+      }
+      return [...prev, ...newFiles];
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
-    }
+    processFiles(e.target.files);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setSelectedFile(e.dataTransfer.files[0]);
-    }
+    processFiles(e.dataTransfer.files);
+  };
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputMode === 'file' && !selectedFile) return;
+    if (inputMode === 'file' && selectedFiles.length === 0) return;
     if (inputMode === 'youtube' && !youtubeUrl) return;
 
     setIsUploading(true);
-    const formData = new FormData();
-    if (inputMode === 'file' && selectedFile) {
-      formData.append('file', selectedFile);
-    } else if (inputMode === 'youtube' && youtubeUrl) {
-      formData.append('youtube_url', youtubeUrl);
-    }
     
-    formData.append('language', language);
-    formData.append('model', model);
-    formData.append('task', taskMethod);
-
     try {
-      const res = await fetch('/api/jobs', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        alert(`Erro: ${data.detail || 'Falha no upload'}`);
-        setIsUploading(false);
-        return;
-      }
+      if (inputMode === 'youtube') {
+        const formData = new FormData();
+        formData.append('youtube_url', youtubeUrl);
+        formData.append('language', language);
+        formData.append('model', model);
+        formData.append('task', taskMethod);
 
-      setActiveJob(data);
+        const res = await fetch('/api/jobs', { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        if (!res.ok) {
+          alert(`Erro: ${data.detail || 'Falha no upload'}`);
+        } else {
+          setActiveJobs(prev => [data, ...prev]);
+          setYoutubeUrl('');
+        }
+      } else {
+        // Enviar multiplos arquivos em lote
+        const newJobs: JobData[] = [];
+        for (const file of selectedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('language', language);
+          formData.append('model', model);
+          formData.append('task', taskMethod);
+
+          const res = await fetch('/api/jobs', { method: 'POST', body: formData });
+          const data = await res.json();
+          if (res.ok) {
+            newJobs.push(data);
+          } else {
+            console.error(`Erro ao enviar ${file.name}:`, data);
+          }
+        }
+        setActiveJobs(prev => [...newJobs, ...prev]);
+        setSelectedFiles([]);
+      }
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Erro ao enviar o arquivo.");
+      alert("Erro ao enviar arquivos.");
     } finally {
       setIsUploading(false);
     }
   };
 
-  const translateStatus = (status: string) => {
-    switch (status) {
-      case 'queued': return 'Na fila...';
-      case 'processing': return 'Processando...';
-      case 'completed': return 'Concluído!';
-      case 'failed': return 'Falhou';
-      default: return status;
-    }
+  const handleJobDelete = (deletedId: string) => {
+    setActiveJobs(prev => prev.filter(job => job.id !== deletedId));
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="max-w-4xl mx-auto space-y-8">
         
-        <div className="bg-indigo-600 px-6 py-8 text-white text-center">
-          <div className="flex justify-center items-center space-x-1">
-            <img src="/logobranca.png" alt="Logo" className="h-14 w-auto" />
-            <h1 className="text-4xl font-bold">Escreve.AI</h1>
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-indigo-600 px-6 py-8 text-white text-center">
+            <div className="flex justify-center items-center space-x-1">
+              <img src="/logobranca.png" alt="Logo" className="h-14 w-auto" />
+              <h1 className="text-4xl font-bold">Escreve.AI</h1>
+            </div>
+            <p className="mt-2 text-indigo-100">Transcreva seus áudios e vídeos localmente com IA</p>
           </div>
-          <p className="mt-2 text-indigo-100">Transcreva seus áudios e vídeos localmente com IA</p>
-        </div>
 
-        <div className="p-8">
-          {activeJob ? (
-            <div className="space-y-6">
-              <div className="text-center">
-                <h3 className="text-xl font-medium text-gray-900">
-                  Status: <span className="text-indigo-600">{translateStatus(activeJob.status)}</span>
-                </h3>
-                {activeJob.error_message && (
-                  <p className="mt-2 text-sm text-red-600">{activeJob.error_message}</p>
-                )}
-              </div>
-              
-              <div className="relative pt-1">
-                <div className="flex mb-2 items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-indigo-600 bg-indigo-200">
-                      Progresso
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-semibold inline-block text-indigo-600">
-                      {activeJob.progress}%
-                    </span>
-                  </div>
-                </div>
-                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-indigo-200">
-                  <div style={{ width: `${activeJob.progress}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-600 transition-all duration-500 ease-in-out"></div>
-                </div>
-              </div>
+          <div className="p-8">
+            <div className="flex justify-center space-x-4 mb-6">
+              <button
+                type="button"
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'file' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                onClick={() => setInputMode('file')}
+              >
+                Upload de Arquivo
+              </button>
+              <button
+                type="button"
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${inputMode === 'youtube' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                onClick={() => setInputMode('youtube')}
+              >
+                Link do YouTube
+              </button>
+            </div>
 
-              {activeJob.status === 'completed' && (
-                <div className="mt-8 space-y-6">
-                  <div className="bg-green-50 text-green-700 p-4 rounded-md text-center font-medium">
-                    Transcrição finalizada com sucesso!
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {inputMode === 'file' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Arquivos de Mídia</label>
+                  <div 
+                    className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-indigo-500 transition-colors"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                  >
+                    <div className="space-y-1 text-center">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <div className="flex text-sm text-gray-600 justify-center">
+                        <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                          <span>Selecione os arquivos</span>
+                          <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} ref={fileInputRef} accept="audio/*,video/*,.mkv,.mp4,.webm,.wav,.mp3,.m4a,.ogg,.flac" multiple />
+                        </label>
+                        <p className="pl-1">ou arraste para cá</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        MP3, WAV, MP4, MKV até {config?.max_file_size_mb || 500}MB
+                      </p>
+                    </div>
                   </div>
                   
-                  {/* Result Section */}
-                  {activeJob.full_text && (
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                        <h4 className="font-medium text-gray-700">Texto Transcrito</h4>
-                        <input 
-                          type="text" 
-                          placeholder="Pesquisar..." 
-                          className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                      </div>
-                      <div className="p-4 bg-white max-h-60 overflow-y-auto text-gray-800 text-sm whitespace-pre-wrap">
-                        {highlightText(activeJob.full_text, searchTerm)}
-                      </div>
+                  {selectedFiles.length > 0 && (
+                    <div className="mt-4 bg-gray-50 p-4 rounded-md border border-gray-200">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Arquivos selecionados ({selectedFiles.length})</h4>
+                      <ul className="space-y-2">
+                        {selectedFiles.map((file, idx) => (
+                          <li key={idx} className="flex justify-between items-center text-sm text-gray-600 bg-white px-3 py-2 rounded shadow-sm">
+                            <span className="truncate">{file.name}</span>
+                            <button 
+                              type="button" 
+                              onClick={() => removeSelectedFile(idx)}
+                              className="text-red-500 hover:text-red-700 ml-2 shrink-0"
+                            >
+                              X
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
-
-                  {/* Downloads */}
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Baixar Arquivos</h4>
-                    <div className="flex flex-wrap gap-2">
-                      <a href={`/api/jobs/${activeJob.id}/download?format=txt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">TXT</a>
-                      <a href={`/api/jobs/${activeJob.id}/download?format=srt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">SRT (Legenda)</a>
-                      <a href={`/api/jobs/${activeJob.id}/download?format=vtt`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">VTT (Legenda Web)</a>
-                      <a href={`/api/jobs/${activeJob.id}/download?format=json`} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition">JSON Bruto</a>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-200 flex justify-between">
-                    <button 
-                      onClick={() => { setActiveJob(null); setSelectedFile(null); setSearchTerm(''); }}
-                      className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      Nova Transcrição
-                    </button>
-                    <button 
-                      onClick={handleDelete}
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-                    >
-                      Excluir Dados
-                    </button>
-                  </div>
-                </div>
-              )}
-              {activeJob.status === 'failed' && (
-                <div className="text-center">
-                  <button 
-                    onClick={() => { setActiveJob(null); setSelectedFile(null); }}
-                    className="mt-4 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-                  >
-                    Tentar Novamente
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              
-              <div className="flex justify-center space-x-4 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setInputMode('file')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md ${inputMode === 'file' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                >
-                  Arquivo Local
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInputMode('youtube')}
-                  className={`px-4 py-2 text-sm font-medium rounded-md ${inputMode === 'youtube' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                >
-                  Link do YouTube
-                </button>
-              </div>
-
-              {inputMode === 'file' ? (
-                <div 
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:bg-gray-50 transition cursor-pointer"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="mt-4 text-sm text-gray-600">
-                    <span className="font-medium text-indigo-600 hover:text-indigo-500">Clique para selecionar</span> ou arraste um arquivo aqui
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    MP3, MP4, WAV, OGG, M4A, AAC
-                  </p>
-                  {selectedFile && (
-                    <div className="mt-4 p-3 bg-indigo-50 rounded-md text-indigo-800 font-medium break-all">
-                      📄 {selectedFile.name}
-                    </div>
-                  )}
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden" 
-                    accept="audio/*,video/*"
-                    onChange={handleFileChange}
-                  />
                 </div>
               ) : (
-                <div className="p-8 border-2 border-gray-200 rounded-lg bg-gray-50">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cole o link do YouTube</label>
+                <div>
+                  <label htmlFor="youtube_url" className="block text-sm font-medium text-gray-700">URL do Vídeo</label>
                   <input
                     type="url"
+                    name="youtube_url"
+                    id="youtube_url"
                     placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full pl-3 pr-3 py-3 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 rounded-md border"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     value={youtubeUrl}
                     onChange={(e) => setYoutubeUrl(e.target.value)}
                   />
-                  <p className="mt-2 text-xs text-gray-500">
-                    O áudio será baixado automaticamente para transcrição.
-                  </p>
+                  <p className="mt-1 text-xs text-gray-500">O áudio será baixado diretamente do YouTube.</p>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Idioma do Áudio</label>
-                  <select 
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border"
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                  >
-                    <option value="auto">Automático (Detectar)</option>
-                    <option value="pt">Português (Brasil)</option>
-                    <option value="en">Inglês</option>
-                    <option value="es">Espanhol</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Modelo de IA</label>
-                  <select 
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                  >
-                    {config?.models ? (
-                      config.models.map(m => (
-                        <option key={m} value={m}>{m} {m === 'base' ? '(Recomendado)' : ''}</option>
-                      ))
-                    ) : (
-                      <option value="base">base (Carregando...)</option>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Ação</label>
-                  <select 
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border"
+                  <label htmlFor="task" className="block text-sm font-medium text-gray-700">Ação</label>
+                  <select
+                    id="task"
+                    name="task"
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                     value={taskMethod}
                     onChange={(e) => setTaskMethod(e.target.value)}
                   >
                     <option value="transcribe">Transcrever</option>
-                    <option value="translate">Traduzir para Inglês</option>
+                    <option value="translate">Traduzir (para Inglês)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="language" className="block text-sm font-medium text-gray-700">Idioma do Áudio</label>
+                  <select
+                    id="language"
+                    name="language"
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                  >
+                    <option value="auto">Detectar Automático</option>
+                    <option value="pt">Português</option>
+                    <option value="en">Inglês</option>
+                    <option value="es">Espanhol</option>
+                    <option value="fr">Francês</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="model" className="block text-sm font-medium text-gray-700">Tamanho do Modelo</label>
+                  <select
+                    id="model"
+                    name="model"
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                  >
+                    {config?.models.map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              {config && (
-                <div className="text-xs text-gray-500">
-                  Limites do sistema: {config.max_file_size_mb}MB | {config.max_duration_minutes} minutos
-                </div>
-              )}
-
-              <button 
-                type="submit"
-                disabled={(inputMode === 'file' && !selectedFile) || (inputMode === 'youtube' && !youtubeUrl) || isUploading}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${((inputMode === 'file' && !selectedFile) || (inputMode === 'youtube' && !youtubeUrl) || isUploading) ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'}`}
-              >
-                {isUploading ? 'Enviando...' : (taskMethod === 'translate' ? 'Começar Tradução' : 'Começar Transcrição')}
-              </button>
+              <div>
+                <button
+                  type="submit"
+                  disabled={isUploading || (inputMode === 'file' && selectedFiles.length === 0) || (inputMode === 'youtube' && !youtubeUrl)}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                  {isUploading ? 'Iniciando Lote...' : 'Começar Transcrição'}
+                </button>
+              </div>
             </form>
-          )}
+          </div>
         </div>
+
+        {/* Fila de Jobs */}
+        {activeJobs.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-800 border-b pb-2">Tarefas ({activeJobs.length})</h2>
+            <div className="grid grid-cols-1 gap-4">
+              {activeJobs.map(job => (
+                <JobItem key={job.id} initialJob={job} onDelete={handleJobDelete} />
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

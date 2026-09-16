@@ -35,7 +35,9 @@ class TranscriptionService:
         audio_path: str,
         language: str | None,
         model_name: str,
-        task: str = "transcribe"
+        task: str = "transcribe",
+        duration_seconds: float = 0.0,
+        progress_callback = None
     ) -> TranscriptionResult:
         model = self._get_model(model_name)
         
@@ -62,6 +64,10 @@ class TranscriptionService:
             }
             segments.append(segment_dict)
             full_text_parts.append(segment.text.strip())
+            
+            if progress_callback and duration_seconds > 0:
+                percent = min(99, int((segment.end / duration_seconds) * 100))
+                progress_callback(percent)
             
         full_text = " ".join(full_text_parts)
         

@@ -76,8 +76,8 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 ## Etapa 12: Melhorias Rápidas e de Alto Impacto
 - [x] **Tradução Automática:** Adicionar suporte na API para a task de tradução do Whisper (para o inglês) e incluir um botão correspondente no frontend.
 - [x] **Importação Direta do YouTube:** Adicionar integração com `yt-dlp` para permitir colar um link de vídeo e baixar/transcrever o áudio automaticamente, sem remover o upload de arquivos locais.
-- [ ] **Progresso em Tempo Real (WebSockets):** Substituir o *polling* por conexões WebSocket no FastAPI e frontend para exibir o andamento exato em tempo real.
-- [ ] **Upload em Lote (Batch Upload):** Alterar a área de envio e o controle de estado para permitir arrastar e enfileirar múltiplos arquivos de uma vez.
+- [x] **Progresso em Tempo Real (WebSockets):** Substituir o *polling* por conexões WebSocket no FastAPI e frontend para exibir o andamento exato em tempo real.
+- [x] **Upload em Lote (Batch Upload):** Alterar a área de envio e o controle de estado para permitir arrastar e enfileirar múltiplos arquivos de uma vez.
 - [ ] **Validação:** Enviar uma lista de arquivos de áudio, acompanhar o progresso via WebSocket sem travamentos, e baixar um resultado traduzido.
 
 ## Etapa 13: Recursos de Inteligência Avançada (Complexidade Média)
