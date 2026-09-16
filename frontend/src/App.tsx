@@ -15,6 +15,7 @@ function App() {
   const [taskMethod, setTaskMethod] = useState('transcribe');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [inputMode, setInputMode] = useState<'file' | 'youtube'>('file');
+  const [diarize, setDiarize] = useState(false);
   
   const [activeJobs, setActiveJobs] = useState<JobData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -82,6 +83,7 @@ function App() {
         formData.append('language', language);
         formData.append('model', model);
         formData.append('task', taskMethod);
+        formData.append('diarize', diarize ? 'true' : 'false');
 
         const res = await fetch('/api/jobs', { method: 'POST', body: formData });
         const data = await res.json();
@@ -101,6 +103,7 @@ function App() {
           formData.append('language', language);
           formData.append('model', model);
           formData.append('task', taskMethod);
+          formData.append('diarize', diarize ? 'true' : 'false');
 
           const res = await fetch('/api/jobs', { method: 'POST', body: formData });
           const data = await res.json();
@@ -264,6 +267,20 @@ function App() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  id="diarize"
+                  name="diarize"
+                  type="checkbox"
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  checked={diarize}
+                  onChange={(e) => setDiarize(e.target.checked)}
+                />
+                <label htmlFor="diarize" className="ml-2 block text-sm text-gray-900">
+                  Identificar Locutores (Diarização) <span className="text-gray-500 text-xs">- Requer Token HF</span>
+                </label>
               </div>
 
               <div>

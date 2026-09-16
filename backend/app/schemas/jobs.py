@@ -17,6 +17,7 @@ class JobResponse(BaseModel):
     language: Optional[str] = None
     model_name: str
     task: str
+    diarize: bool = False
     status: str
     progress: int
     error_code: Optional[str] = None

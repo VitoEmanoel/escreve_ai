@@ -69,6 +69,7 @@ def process_transcription_job(job_id: str):
                 language=job.language,
                 model_name=job.model_name,
                 task=job.task,
+                diarize=bool(job.diarize),
                 duration_seconds=job.duration_seconds or 0.0,
                 progress_callback=update_progress
             )

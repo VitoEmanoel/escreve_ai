@@ -7,6 +7,8 @@ export interface JobData {
   progress: number;
   error_message?: string;
   full_text?: string;
+  diarize?: boolean;
+  segments?: any[];
 }
 
 interface JobItemProps {
@@ -126,7 +128,28 @@ export function JobItem({ initialJob, onDelete }: JobItemProps) {
 
         {job.status === 'completed' && (
           <div className="mt-4 space-y-4">
-            {job.full_text && (
+            {(job.diarize && job.segments) ? (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center gap-2">
+                  <h4 className="font-medium text-gray-700 text-sm whitespace-nowrap">Diálogo Transcrito</h4>
+                  <input 
+                    type="text" 
+                    placeholder="Pesquisar..." 
+                    className="w-full max-w-[200px] px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="p-3 bg-white max-h-60 overflow-y-auto text-gray-800 text-sm space-y-2">
+                  {job.segments.map((seg: any, i: number) => (
+                    <div key={i} className="mb-2">
+                      <span className="font-bold text-indigo-600 mr-2">{seg.speaker || 'Locutor'}:</span>
+                      <span>{highlightText(seg.text, searchTerm)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : job.full_text ? (
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center gap-2">
                   <h4 className="font-medium text-gray-700 text-sm whitespace-nowrap">Texto Transcrito</h4>
@@ -142,7 +165,7 @@ export function JobItem({ initialJob, onDelete }: JobItemProps) {
                   {highlightText(job.full_text, searchTerm)}
                 </div>
               </div>
-            )}
+            ) : null}
 
             <div>
               <div className="flex flex-wrap gap-2 mt-2">

@@ -37,6 +37,7 @@ def create_job(
     language: str | None = "auto",
     model: str | None = None,
     task: str | None = "transcribe",
+    diarize: bool = False,
 ) -> TranscriptionJob:
     if not file and not youtube_url:
         raise HTTPException(
@@ -79,6 +80,7 @@ def create_job(
             language=language or "auto",
             model_name=model_name,
             task=task or "transcribe",
+            diarize=1 if diarize else 0,
             status="queued",
             progress=0
         )
@@ -159,6 +161,7 @@ def create_job(
         language=language or "auto",
         model_name=model_name,
         task=task or "transcribe",
+        diarize=1 if diarize else 0,
         status="queued",
         progress=0
     )

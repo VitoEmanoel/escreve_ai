@@ -81,7 +81,7 @@ Este documento detalha o roteiro de desenvolvimento em etapas lógicas e increme
 - [ ] **Validação:** Enviar uma lista de arquivos de áudio, acompanhar o progresso via WebSocket sem travamentos, e baixar um resultado traduzido.
 
 ## Etapa 13: Recursos de Inteligência Avançada (Complexidade Média)
-- [ ] **Diarização (Identificação de Locutores):** Integrar uma ferramenta como `pyannote.audio` ao pipeline para separar o texto por quem está falando (Ex: Locutor 1, Locutor 2).
+- [x] **Diarização (Identificação de Locutores):** Integrar uma ferramenta como `pyannote.audio` ao pipeline para separar o texto por quem está falando (Ex: Locutor 1, Locutor 2).
 - [ ] **Geração de Resumo / Ata Inteligente:** Integrar um LLM (local ou API) no pipeline final para ler a transcrição gerada e extrair os pontos-chave e decisões.
 - [ ] **Embutir Legendas no Vídeo:** Criar um serviço no backend que usa o FFmpeg para sobrepor (hardcode) a legenda gerada no `.mp4` original e oferecer o download do vídeo.
 - [ ] **Validação:** Processar um vídeo de reunião real, verificar o download do vídeo já com legendas, a listagem dos participantes falando separados e gerar a ata resumida da reunião.

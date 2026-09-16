@@ -42,6 +42,7 @@ async def websocket_job_status(websocket: WebSocket, job_id: str, db: Session = 
                 language=job.language,
                 model_name=job.model_name,
                 task=job.task,
+                diarize=bool(job.diarize),
                 status=job.status,
                 progress=job.progress,
                 error_code=job.error_code,
@@ -71,6 +72,7 @@ def create_transcription_job(
     language: str = Form("auto"),
     model: str = Form("base"),
     task: str = Form("transcribe"),
+    diarize: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     job = job_service.create_job(
@@ -80,6 +82,7 @@ def create_transcription_job(
         language=language,
         model=model,
         task=task,
+        diarize=diarize,
     )
     
     # Trigger the background processing
@@ -117,6 +120,7 @@ def get_transcription_job(job_id: str, db: Session = Depends(get_db)):
         language=job.language,
         model_name=job.model_name,
         task=job.task,
+        diarize=bool(job.diarize),
         status=job.status,
         progress=job.progress,
         error_code=job.error_code,
@@ -171,7 +175,7 @@ def download_transcription(
             pass
 
     if format == "txt":
-        content = export_service.generate_txt(job.full_text)
+        content = export_service.generate_txt(job.full_text, segments)
         media_type = "text/plain; charset=utf-8"
     elif format == "srt":
         content = export_service.generate_srt(segments)

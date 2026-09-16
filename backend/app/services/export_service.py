@@ -28,9 +28,11 @@ def generate_srt(segments: List[Dict[str, Any]]) -> str:
     for i, seg in enumerate(segments, start=1):
         start_ts = format_timestamp(seg["start"], separator=",")
         end_ts = format_timestamp(seg["end"], separator=",")
+        speaker = seg.get("speaker")
+        text = f"{speaker}: {seg['text'].strip()}" if speaker else seg['text'].strip()
         lines.append(str(i))
         lines.append(f"{start_ts} --> {end_ts}")
-        lines.append(seg["text"].strip())
+        lines.append(text)
         lines.append("")
     return "\n".join(lines)
 
@@ -39,12 +41,20 @@ def generate_vtt(segments: List[Dict[str, Any]]) -> str:
     for seg in segments:
         start_ts = format_timestamp(seg["start"], separator=".")
         end_ts = format_timestamp(seg["end"], separator=".")
+        speaker = seg.get("speaker")
+        text = f"<{speaker}> {seg['text'].strip()}" if speaker else seg['text'].strip()
         lines.append(f"{start_ts} --> {end_ts}")
-        lines.append(seg["text"].strip())
+        lines.append(text)
         lines.append("")
     return "\n".join(lines)
 
-def generate_txt(full_text: str) -> str:
+def generate_txt(full_text: str, segments: List[Dict[str, Any]] = None) -> str:
+    if segments and any("speaker" in s for s in segments):
+        lines = []
+        for s in segments:
+            speaker = s.get("speaker", "Locutor")
+            lines.append(f"{speaker}: {s['text']}")
+        return "\n".join(lines)
     return full_text
 
 def generate_json(segments: List[Dict[str, Any]], full_text: str, language: str) -> str:
