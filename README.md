@@ -10,15 +10,40 @@ O **Escreve.AI** é um sistema completo, 100% offline e focado em privacidade pa
 
 ---
 
-##  Opção 1: Rodando via Docker (Recomendado e mais fácil)
-Para rodar sem precisar instalar nada além do Docker:
-1. Instale o [Docker](https://docs.docker.com/get-docker/) e o [Docker Compose](https://docs.docker.com/compose/install/).
-2. Abra o terminal na raiz do projeto e execute:
+## 🐳 Opção 1: Rodando via Docker (Recomendado e mais fácil)
+
+### Pré-requisitos (Linux/macOS/Windows)
+1. Certifique-se de ter o [Docker](https://docs.docker.com/get-docker/) e o [Docker Compose](https://docs.docker.com/compose/install/) instalados.
+2. **No Linux**, garanta que o serviço do Docker esteja iniciado e habilitado:
+   ```bash
+   sudo systemctl enable --now docker
+   ```
+   > **Dica de permissão no Linux**: Para rodar o Docker sem `sudo`, adicione seu usuário ao grupo:
+   > ```bash
+   > sudo usermod -aG docker $USER
+   > newgrp docker
+   > ```
+
+### Passo a passo:
+1. Abra o terminal na raiz do projeto e crie o arquivo de configuração `.env`:
+   ```bash
+   cp .env.example backend/.env
+   ```
+2. Suba a aplicação com o Docker Compose:
    ```bash
    docker compose up --build -d
    ```
-3. Acesse **http://localhost** no seu navegador.
-4. Para desligar: `docker compose down`.
+3. Acompanhe os logs da inicialização (opcional):
+   ```bash
+   docker compose logs -f
+   ```
+4. Acesse **http://localhost** no seu navegador.
+5. Para desligar os serviços:
+   ```bash
+   docker compose down
+   ```
+
+> **Aviso de Porta**: A interface roda na porta padrão `80`. Se a porta 80 estiver em uso por outro serviço na sua máquina, altere em [docker-compose.yml](file:///home/victor/Documentos/Repository/escreve_ai/docker-compose.yml) a linha `- "80:80"` para `- "8080:80"` e acesse em `http://localhost:8080`.
 
 **Nota (GPU - NVIDIA)**: Para usar a placa de vídeo no Docker, descomente a seção `deploy: resources...` no arquivo `docker-compose.yml` e instale o [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 

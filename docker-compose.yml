@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build: 
@@ -7,14 +5,18 @@ services:
     container_name: escreveai_backend
     volumes:
       - escreveai_data:/app/data
+      - escreveai_cache:/root/.cache
     env_file:
-      - ./backend/.env
+      - path: .env
+        required: false
+      - path: ./backend/.env
+        required: false
     environment:
       - DATABASE_URL=sqlite:///./data/transcriber.db
       - DATA_DIR=./data
-      # Você pode ajustar esses valores no docker-compose se quiser
       - MAX_FILE_SIZE_MB=1024
       - MAX_DURATION_MINUTES=180
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:5173
     # Opcional: Se quiser habilitar GPU (CUDA) no Docker (Requer nvidia-container-toolkit)
     # deploy:
     #   resources:
@@ -35,3 +37,4 @@ services:
 
 volumes:
   escreveai_data:
+  escreveai_cache:
